@@ -30,6 +30,8 @@ class Stateful[S](private var state: S) {
     fn(state)
   }
 
+  def get = process(s => s)
+
 }
 
 class StatefulSeq[T] extends Stateful[Seq[T]](Seq()) {
