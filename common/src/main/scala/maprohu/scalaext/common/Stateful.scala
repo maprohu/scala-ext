@@ -14,7 +14,9 @@ object Stateful {
 
   def shutdown = new StatefulShutdown
 
-  def map[K, V](factory: K => V) = new StatefulMap(factory)
+  def map[K, V](factory: (StatefulMap[K, V], K) => V) = new StatefulMap(factory)
+
+  def futures[T] = new StatefulFutures[T]
 
 }
 
@@ -30,7 +32,7 @@ class Stateful[S](private var state: S) {
     fn(state)
   }
 
-  def get = process(s => s)
+  def extract = process(s => s)
 
 }
 
@@ -48,17 +50,21 @@ class StatefulSeq[T] extends Stateful[Seq[T]](Seq()) {
 
 }
 
-class StatefulMap[K, V](factory: K => V) extends Stateful[Map[K, V]](Map()) {
+class StatefulMap[K, V](factory: (StatefulMap[K, V], K) => V) extends Stateful[Map[K, V]](Map()) {
 
   def get(key: K) = transform { map =>
     map
       .get(key)
       .map(value => (value, map))
       .getOrElse {
-        val value = factory(key)
+        val value = factory(this, key)
 
         (value, map.updated(key, value))
       }
+  }
+
+  def remove(key: K) = transform { map =>
+    (map.contains(key), map - key)
   }
 
 }
@@ -107,6 +113,24 @@ class StatefulShutdown {
         (done, state)
     }
 
+
+}
+
+class StatefulFutures[T] {
+
+  val futures = Stateful.seq[Future[T]]
+
+  def add(future: Future[T])(implicit executionContext: ExecutionContext) = {
+    future
+      .onComplete(_ => futures.remove(future))
+
+    futures.add(future)
+  }
+
+  def future(implicit executionContext: ExecutionContext) =
+    Future.sequence(
+      futures.extract
+    )
 
 }
 
