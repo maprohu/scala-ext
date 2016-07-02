@@ -34,6 +34,10 @@ class Stateful[S](private var state: S) {
 
   def extract = process(s => s)
 
+  def update(fn: S => Option[S]) : Unit = synchronized {
+    fn(state).foreach( state = _ )
+  }
+
 }
 
 class StatefulSeq[T] extends Stateful[Seq[T]](Seq()) {
