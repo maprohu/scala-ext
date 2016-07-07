@@ -6,13 +6,11 @@
 
     <parent>
         <groupId>maprohu</groupId>
-        <artifactId>scala-ext-parent</artifactId>
-        <version>1.0.0</version>
-        <relativePath>../parent</relativePath>
+        <artifactId>scala-ext</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>scala-ext-common</artifactId>
     <packaging>bundle</packaging>
-    <version>1.0.1-SNAPSHOT</version>
 
     <build>
         <plugins>

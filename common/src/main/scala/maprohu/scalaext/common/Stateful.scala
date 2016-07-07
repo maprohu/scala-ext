@@ -18,6 +18,8 @@ object Stateful {
 
   def futures[T] = new StatefulFutures[T]
 
+  def cancels(implicit executionContext: ExecutionContext) = new StatefulCancels
+
 }
 
 class Stateful[S](private var state: S) {
@@ -138,4 +140,56 @@ class StatefulFutures[T] {
 
 }
 
+class StatefulCancels(implicit
+  executionContext: ExecutionContext
+) {
+
+  private case class State(
+    cancelled: Boolean = false,
+    cancels: Seq[Cancel] = Seq()
+  )
+
+  private val promise = Promise[Any]()
+
+  private val state = Stateful(State())
+
+  val cancel = Cancel(
+    cancel = () => state.update({ s =>
+      if (!s.cancelled) {
+        val fut =
+          Future.sequence(
+            s.cancels.map(_.done)
+          )
+
+        promise.completeWith(
+          fut
+        )
+        s.cancels.foreach(_.cancel())
+        Some(s.copy(cancelled = true))
+      } else {
+        None
+      }
+    }),
+    promise.future
+  )
+
+  def add(cf: () => Cancel) : Option[Cancel] = {
+    state.transform({ s =>
+      if (s.cancelled) {
+        (None, s)
+      } else {
+        val c = cf()
+        c.done.onComplete({ _ =>
+          state.transform({ s =>
+            ((), s.copy(cancels = s.cancels diff Seq(c)))
+          })
+        })
+        (Some(c), s.copy(cancels = s.cancels :+ c))
+      }
+    })
+
+  }
+
+
+}
 
