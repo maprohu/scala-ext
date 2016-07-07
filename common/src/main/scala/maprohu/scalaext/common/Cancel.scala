@@ -13,6 +13,21 @@ object Cancel {
     )
   }
 
+  def fromPromise(factory: Promise[Any] => Unit) : Cancel = {
+    val promise = Promise[Any]()
+    factory(promise)
+    Cancel(
+      () => promise.trySuccess(()),
+      promise.future
+    )
+  }
+
+  def cancelled = Cancel(
+    () => (),
+    Future.successful(())
+  )
+
+
 }
 
 case class Cancel(

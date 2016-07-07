@@ -190,6 +190,23 @@ class StatefulCancels(implicit
 
   }
 
+  def addValue[T](cf: () => (Cancel, T)) : Option[T] = {
+    state.transform({ s =>
+      if (s.cancelled) {
+        (None, s)
+      } else {
+        val (c, t) = cf()
+        c.done.onComplete({ _ =>
+          state.transform({ s =>
+            ((), s.copy(cancels = s.cancels diff Seq(c)))
+          })
+        })
+        (Some(t), s.copy(cancels = s.cancels :+ c))
+      }
+    })
+
+  }
+
 
 }
 
