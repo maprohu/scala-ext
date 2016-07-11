@@ -5,7 +5,7 @@
     <parent>
         <groupId>maprohu</groupId>
         <artifactId>scala-ext</artifactId>
-        <version>1.0.2-SNAPSHOT</version>
+        <version>1.0.2</version>
     </parent>
     <artifactId>scala-ext-common</artifactId>
     <packaging>bundle</packaging>
